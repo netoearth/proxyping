@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Python modules
+        run: |
+          python3 -m py_compile python_app/proxy_core.py python_app/ui_widgets.py python_app/proxy_tester.py python_app/build_release.py
+      - name: Run Python core unit checks
+        run: |
+          python3 - <<'EOF'
+          import sys
+          sys.path.insert(0, "python_app")
+          import proxy_core
+          p = proxy_core.parse_proxy_uri("socks5://user:pass@127.0.0.1:9909")
+          assert p is not None and p.port == 9909 and p.username == "user"
+          tg = proxy_core.parse_proxy_uri("tg://proxy?server=1.2.3.4&port=443&secret=dd00112233445566778899aabbccddeeff")
+          assert tg is not None and tg.protocol == "MTPROTO" and tg.port == 443
+          print("Python core checks passed")
+          EOF
+
+  verify-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build

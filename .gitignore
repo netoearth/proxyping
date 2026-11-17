@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python & PyInstaller packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+.venv/
+venv/
+dist_release/
+python_app/build/
+python_app/dist/

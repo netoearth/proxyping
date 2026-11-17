@@ -355,7 +355,7 @@ function fetchViaProxySocket(
     const sendTargetHttpGet = () => {
       const writeGet = (sock: net.Socket | tls.TLSSocket) => {
         sock.write(
-          `GET ${reqPath} HTTP/1.1\r\nHost: ${targetHost}\r\nUser-Agent: ProxyProbe/1.0\r\nAccept: application/json,text/plain,*/*\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n`,
+          `GET ${reqPath} HTTP/1.1\r\nHost: ${targetHost}\r\nUser-Agent: ProxyPing/1.0\r\nAccept: application/json,text/plain,*/*\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n`,
         );
       };
 
@@ -591,7 +591,7 @@ async function startServer() {
         const scheme = spec.port === 443 ? 'https' : 'http';
         const resp = await fetch(`${scheme}://${spec.host}${spec.path}`, {
           signal: AbortSignal.timeout(5000),
-          headers: {'User-Agent': 'ProxyProbe/1.0', Accept: 'application/json,text/plain,*/*'},
+          headers: {'User-Agent': 'ProxyPing/1.0', Accept: 'application/json,text/plain,*/*'},
         });
         status = resp.status;
         if (spec.kind === 'pconline') {

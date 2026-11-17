@@ -555,7 +555,7 @@ def _http_get_via_socket(
         req = (
             f"GET {path} HTTP/1.1\r\n"
             f"Host: {target_host}\r\n"
-            f"User-Agent: Mozilla/5.0 ProxyProbe/1.0\r\n"
+            f"User-Agent: Mozilla/5.0 ProxyPing/1.0\r\n"
             f"Accept: application/json,text/plain,*/*\r\n"
             f"Accept-Encoding: identity\r\n"
             f"Connection: close\r\n\r\n"

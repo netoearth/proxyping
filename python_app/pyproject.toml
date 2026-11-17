@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proxy-ping"
+version = "1.0.0"
+description = "Lightweight cross-platform proxy connectivity & multi-source IP checker built with Python Tkinter"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+dependencies = []
+
+[project.gui-scripts]
+proxy-ping = "proxy_tester:main"
+
+[tool.setuptools]
+py-modules = ["proxy_tester", "proxy_core", "ui_widgets"]

@@ -342,7 +342,7 @@ class ProxyTesterApp:
 
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("代理设置 · 多源出口 IP 检测工具")
+        self.root.title("ProxyPing · 代理设置与多源出口 IP 检测")
         self.root.configure(bg=THEME["bg"])
         self.root.geometry("940x640")
         self.root.minsize(820, 540)

@@ -252,7 +252,7 @@ export default function App() {
         {/* Compact GUI Title Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5 px-1">
           <h1 className="text-[18px] font-semibold text-[#f5f5f5] tracking-tight">
-            网络代理连通性与多源 IP 检测
+            ProxyPing · 网络代理连通性与多源 IP 检测
           </h1>
           <div className="text-[12.5px] text-[#7f91a4]">
             MTPROTO · SOCKS5 · HTTP · WEB · 多源出口 IP 对比
