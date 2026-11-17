@@ -562,18 +562,40 @@ def _http_get_via_socket(
         ).encode("ascii")
         active_sock.sendall(req)
 
-        chunks = []
+        buf = bytearray()
+        content_length: Optional[int] = None
+        is_chunked = False
+        header_end = -1
         while True:
             data = active_sock.recv(4096)
             if not data:
                 break
-            chunks.append(data)
-        raw = b"".join(chunks)
+            buf.extend(data)
+            if header_end == -1:
+                header_end = buf.find(b"\r\n\r\n")
+                if header_end != -1:
+                    hdr_str = bytes(buf[:header_end]).decode("latin-1", errors="ignore").lower()
+                    is_chunked = "transfer-encoding: chunked" in hdr_str
+                    for line in hdr_str.splitlines():
+                        if line.startswith("content-length:"):
+                            val = line.split(":", 1)[1].strip()
+                            if val.isdigit():
+                                content_length = int(val)
+            if header_end != -1:
+                body_len = len(buf) - (header_end + 4)
+                if content_length is not None and body_len >= content_length:
+                    break
+                if is_chunked and bytes(buf[header_end + 4:]).endswith(b"0\r\n\r\n"):
+                    break
+
+        raw = bytes(buf)
         header_bytes, _, body_bytes = raw.partition(b"\r\n\r\n")
-        status_line = header_bytes.decode("latin-1", errors="ignore").splitlines()[0]
+        header_text = header_bytes.decode("latin-1", errors="ignore")
+        status_line = header_text.splitlines()[0] if header_text else ""
         code = int(status_line.split()[1]) if len(status_line.split()) > 1 else 0
-        body_text = body_bytes.decode("utf-8", errors="replace")
-        if "transfer-encoding: chunked" in header_bytes.decode("latin-1", errors="ignore").lower():
+        encoding = "gbk" if "gbk" in header_text.lower() or "gb2312" in header_text.lower() else "utf-8"
+
+        if is_chunked:
             decoded = []
             idx = 0
             while idx < len(body_bytes):
@@ -589,7 +611,9 @@ def _http_get_via_socket(
                 start_i = nl + 2
                 decoded.append(body_bytes[start_i:start_i + sz])
                 idx = start_i + sz + 2
-            body_text = b"".join(decoded).decode("utf-8", errors="replace")
+            body_text = b"".join(decoded).decode(encoding, errors="replace")
+        else:
+            body_text = body_bytes.decode(encoding, errors="replace")
         return code, body_text
     finally:
         for s in (wrapped, sock):
