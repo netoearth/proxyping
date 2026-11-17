@@ -1,0 +1,6 @@
+{
+  "name": "ProxyProbe Tkinter",
+  "description": "轻量级跨平台网络代理连通性测试工具（Python Tkinter 架构与实时交互预览）",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
