@@ -25,7 +25,7 @@ BUILD_DIST_DIR = PYTHON_APP_DIR / "dist"
 
 
 def clean_dirs() -> None:
-    for d in (BUILD_WORK_DIR, BUILD_DIST_DIR):
+    for d in (BUILD_WORK_DIR, BUILD_DIST_DIR, RELEASE_DIR):
         if d.exists():
             shutil.rmtree(d)
     RELEASE_DIR.mkdir(parents=True, exist_ok=True)
@@ -117,9 +117,11 @@ def package_python_source() -> Path:
 
 
 def main() -> None:
+    skip_src = "--skip-src" in sys.argv[1:]
     clean_dirs()
-    src_zip = package_python_source()
-    print(f"Created source bundle: {src_zip}")
+    if not skip_src:
+        src_zip = package_python_source()
+        print(f"Created source bundle: {src_zip}")
 
     try:
         import PyInstaller  # noqa: F401

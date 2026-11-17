@@ -91,12 +91,15 @@ python3 python_app/build_release.py
    git push -u origin main
    ```
 
-2. **创建版本标签触发 GitHub Actions 自动打包与 Release 发布**：
+2. **触发 GitHub Actions 自动打包与 Release 发布**（支持以下任意一种方式）：
 
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+   - **方式 A：推送版本标签自动发布**
+     ```bash
+     git tag v1.0.0
+     git push origin v1.0.0
+     ```
+   - **方式 B：在 GitHub Actions 页面手动触发**
+     进入仓库 **Actions → Release Desktop Packages → Run workflow**（可填写版本号如 `v1.0.0`，留空将自动生成 `v1.0.<run_number>`），构建完成后同样会自动发布到 Releases。
 
 3. **获取发布产物**：
    - GitHub Actions 将在 `windows-latest`、`macos-latest`、`ubuntu-latest` 三端并发编译打包。
