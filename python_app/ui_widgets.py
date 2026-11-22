@@ -214,7 +214,7 @@ class ScrollableFrame(tk.Frame):
 
     def __init__(self, master: tk.Misc, bg: str = THEME["bg"], **kwargs) -> None:
         super().__init__(master, bg=bg, **kwargs)
-        self.canvas = tk.Canvas(self, bg=bg, highlightthickness=0, bd=0)
+        self.canvas = tk.Canvas(self, bg=bg, highlightthickness=0, bd=0, height=120)
         self.scrollbar = tk.Scrollbar(
             self,
             orient="vertical",

@@ -55,11 +55,11 @@ class EditProxyDialog(tk.Toplevel):
 
         self.title("编辑代理" if entry else "添加代理")
         self.configure(bg=THEME["bg"])
-        self.resizable(False, False)
+        self.minsize(360, 500)
         self.transient(master)
         self.grab_set()
 
-        w, h = 360, 520
+        w, h = 370, 540
         x = master.winfo_rootx() + max(0, (master.winfo_width() - w) // 2)
         y = master.winfo_rooty() + max(0, (master.winfo_height() - h) // 2)
         self.geometry(f"{w}x{h}+{x}+{y}")
@@ -139,8 +139,14 @@ class EditProxyDialog(tk.Toplevel):
             anchor="w",
         ).pack(fill="x", pady=(0, 8))
 
+        footer = tk.Frame(root, bg=THEME["bg"])
+        footer.pack(side="bottom", fill="x", pady=(14, 0))
+
+        FlatTextButton(footer, text="保存", command=self._save).pack(side="right")
+        FlatTextButton(footer, text="取消", command=self.destroy).pack(side="right", padx=(0, 4))
+
         self.auth_container = tk.Frame(root, bg=THEME["bg"])
-        self.auth_container.pack(fill="x", expand=True)
+        self.auth_container.pack(fill="both", expand=True)
 
         self.secret_input = UnderlineEntry(
             self.auth_container,
@@ -158,12 +164,6 @@ class EditProxyDialog(tk.Toplevel):
             initial_value=self._entry.password if self._entry else "",
             show="*",
         )
-
-        footer = tk.Frame(root, bg=THEME["bg"])
-        footer.pack(fill="x", side="bottom", pady=(14, 0))
-
-        FlatTextButton(footer, text="保存", command=self._save).pack(side="right")
-        FlatTextButton(footer, text="取消", command=self.destroy).pack(side="right", padx=(0, 4))
 
         self.host_input.entry.focus_set()
 
@@ -359,7 +359,6 @@ class ProxyTesterApp:
         self._executor = ThreadPoolExecutor(max_workers=8)
         self._result_queue: queue.Queue = queue.Queue()
         self._ip_queue: queue.Queue = queue.Queue()
-        self._mode_rows: Dict[str, TelegramRadioRow] = {}
         self._proxy_widgets: Dict[str, ProxyRowWidget] = {}
         self._ip_cards: Dict[str, Dict[str, tk.Label]] = {}
 
@@ -425,24 +424,6 @@ class ProxyTesterApp:
 
         self.global_menu_btn.bind("<Button-1>", self._show_global_menu)
 
-        # Mode Radios
-        mode_frame = tk.Frame(left_pane, bg=THEME["bg"], padx=20)
-        mode_frame.pack(fill="x", pady=(0, 10))
-
-        for key, title in (
-            ("disabled", "禁用代理设置"),
-            ("system", "使用系统代理"),
-            ("custom", "使用自定义代理"),
-        ):
-            row = TelegramRadioRow(
-                mode_frame,
-                text=title,
-                selected=(self.mode == key),
-                on_click=lambda m=key: self._set_mode(m),
-            )
-            row.pack(fill="x", pady=2)
-            self._mode_rows[key] = row
-
         # Recessed Notice Band
         notice = tk.Frame(left_pane, bg=THEME["bg_recessed"], padx=20, pady=12)
         notice.pack(fill="x")
@@ -461,40 +442,9 @@ class ProxyTesterApp:
         )
         self.notice_label.pack(fill="x")
 
-        # Scrollable Proxy List
-        self.list_container = ScrollableFrame(left_pane, bg=THEME["bg"])
-        self.list_container.pack(fill="both", expand=True, pady=(6, 0))
-
-        # Share Row
-        share_row = tk.Frame(left_pane, bg=THEME["bg"], padx=20, pady=10, cursor="hand2")
-        share_row.pack(fill="x")
-
-        share_icon = tk.Label(
-            share_row,
-            text="⧉",
-            font=get_ui_font(12),
-            fg=THEME["muted"],
-            bg=THEME["bg"],
-            cursor="hand2",
-        )
-        share_icon.pack(side="left", padx=(2, 12))
-
-        share_text = tk.Label(
-            share_row,
-            text="分享代理列表",
-            font=get_ui_font(10),
-            fg=THEME["text"],
-            bg=THEME["bg"],
-            cursor="hand2",
-        )
-        share_text.pack(side="left")
-
-        for w in (share_row, share_icon, share_text):
-            w.bind("<Button-1>", lambda _e: self._share_proxy_list())
-
-        # Footer Bar
+        # Pack Footer BEFORE expandable list so Add/Test/Close buttons are never clipped
         footer = tk.Frame(left_pane, bg=THEME["bg"], padx=16, pady=12)
-        footer.pack(fill="x")
+        footer.pack(side="bottom", fill="x")
 
         self.status_hint = tk.Label(
             footer,
@@ -508,6 +458,10 @@ class ProxyTesterApp:
         FlatTextButton(footer, text="添加", command=self._open_add_dialog).pack(side="right")
         FlatTextButton(footer, text="全部测试", command=self.test_all_proxies).pack(side="right")
         FlatTextButton(footer, text="关闭", command=self._on_close).pack(side="right")
+
+        # Scrollable Proxy List fills remaining vertical space
+        self.list_container = ScrollableFrame(left_pane, bg=THEME["bg"])
+        self.list_container.pack(side="top", fill="both", expand=True, pady=(6, 0))
 
         # Right Pane: IP233-style Multi-Source IP Exit Check
         ip_header = tk.Frame(right_pane, bg=THEME["bg_recessed"], padx=20, pady=14)
@@ -615,13 +569,6 @@ class ProxyTesterApp:
         finally:
             self._global_menu.grab_release()
 
-    def _set_mode(self, mode: str) -> None:
-        self.mode = mode
-        for key, row in self._mode_rows.items():
-            row.set_selected(key == mode)
-        self._refresh_notice_text()
-        self._persist()
-
     def _refresh_system_proxy(self) -> None:
         self.system_proxies = detect_system_proxies()
         self._refresh_notice_text()
@@ -632,14 +579,11 @@ class ProxyTesterApp:
             if self.system_proxies
             else "未检测到系统代理"
         )
-        if self.mode == "system":
-            extra = f"系统代理: {sys_info}"
-        elif self.mode == "disabled":
-            extra = "当前模式: 已禁用代理直连"
-        else:
-            extra = f"探测目标: {self.target_host}:{self.target_port}"
         self.notice_label.configure(
-            text=f"代理服务器可能有助于解决个别地区无法连接目标网络的情况。\n{extra}"
+            text=(
+                "代理服务器可能有助于解决个别地区无法连接目标网络的情况。\n"
+                f"探测目标: {self.target_host}:{self.target_port} · 系统代理: {sys_info}"
+            )
         )
 
     def _render_proxy_list(self) -> None:
@@ -674,7 +618,6 @@ class ProxyTesterApp:
 
     def _select_proxy(self, proxy_id: str) -> None:
         self.selected_id = proxy_id
-        self._set_mode("custom")
         for pid, widget in self._proxy_widgets.items():
             widget.update_state(widget.entry, pid == proxy_id)
         self._persist()
@@ -716,14 +659,6 @@ class ProxyTesterApp:
             self.root.clipboard_clear()
             self.root.clipboard_append(target.to_share_uri())
             self._flash_hint("已复制代理链接")
-
-    def _share_proxy_list(self) -> None:
-        if not self.proxies:
-            return
-        lines = [p.to_share_uri() for p in self.proxies]
-        self.root.clipboard_clear()
-        self.root.clipboard_append("\n".join(lines))
-        self._flash_hint(f"已复制 {len(lines)} 条代理到剪贴板")
 
     def _import_proxy_uri(self) -> None:
         raw = simpledialog.askstring(

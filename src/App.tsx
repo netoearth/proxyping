@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {IpSourcesPanel} from './components/IpSourcesPanel';
 import {TelegramProxyWindow} from './components/TelegramProxyWindow';
-import type {ProxyEntry, ProxyMode} from './types/proxy';
+import type {ProxyEntry} from './types/proxy';
 
 const INITIAL_PROXIES: ProxyEntry[] = [
   {
@@ -67,7 +67,6 @@ const INITIAL_PROXIES: ProxyEntry[] = [
 ];
 
 export default function App() {
-  const [mode, setMode] = useState<ProxyMode>('system');
   const [proxies, setProxies] = useState<ProxyEntry[]>(INITIAL_PROXIES);
   const [selectedId, setSelectedId] = useState<string | null>('p5');
   const [targetHost, setTargetHost] = useState('cp.cloudflare.com');
@@ -262,8 +261,6 @@ export default function App() {
         {/* Pure Dual-Pane Desktop GUI */}
         <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 items-start">
           <TelegramProxyWindow
-            mode={mode}
-            onModeChange={setMode}
             proxies={proxies}
             selectedId={selectedId}
             targetHost={targetHost}
@@ -271,7 +268,6 @@ export default function App() {
             systemProxies={systemProxies}
             onSelectProxy={(id) => {
               setSelectedId(id);
-              setMode('custom');
             }}
             onTestProxy={handleTestOne}
             onTestAll={handleTestAll}

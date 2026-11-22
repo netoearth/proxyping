@@ -1,10 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Copy, MoreVertical, Check} from 'lucide-react';
-import type {ProxyEntry, ProxyMode, ProxyProtocol} from '../types/proxy';
+import {MoreVertical} from 'lucide-react';
+import type {ProxyEntry, ProxyProtocol} from '../types/proxy';
 
 interface TelegramProxyWindowProps {
-  mode: ProxyMode;
-  onModeChange: (mode: ProxyMode) => void;
   proxies: ProxyEntry[];
   selectedId: string | null;
   targetHost: string;
@@ -35,8 +33,6 @@ function RadioCircle({selected}: {selected: boolean}) {
 }
 
 export function TelegramProxyWindow({
-  mode,
-  onModeChange,
   proxies,
   selectedId,
   targetHost,
@@ -171,17 +167,6 @@ export function TelegramProxyWindow({
     return `${scheme}://${auth}${p.host}:${p.port}`;
   };
 
-  const handleShareAll = async () => {
-    if (!proxies.length) return;
-    const text = proxies.map(formatShareUri).join('\n');
-    try {
-      await navigator.clipboard.writeText(text);
-      flashCopied(`已复制 ${proxies.length} 条代理配置`);
-    } catch {
-      flashCopied('已生成代理分享文本');
-    }
-  };
-
   const handleCopyOne = async (p: ProxyEntry) => {
     setOpenRowMenuId(null);
     try {
@@ -270,50 +255,25 @@ export function TelegramProxyWindow({
           </div>
         </div>
 
-        {/* Mode Radio List */}
-        <div className="px-5 pb-3 space-y-1">
-          {[
-            {key: 'disabled' as const, label: '禁用代理设置'},
-            {key: 'system' as const, label: '使用系统代理'},
-            {key: 'custom' as const, label: '使用自定义代理'},
-          ].map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onModeChange(item.key)}
-              className="w-full flex items-center gap-3.5 py-2 px-1 -mx-1 rounded hover:bg-[#26323e] transition-colors text-left cursor-pointer"
-            >
-              <RadioCircle selected={mode === item.key} />
-              <span className="text-[14px] text-[#f5f5f5]">{item.label}</span>
-            </button>
-          ))}
-        </div>
-
         {/* Recessed Notice Band */}
-        <div className="bg-[#17212b] px-5 py-3 border-y border-[#1b2632]">
+        <div className="bg-[#17212b] px-5 py-3 border-y border-[#1b2632] shrink-0">
           <p className="text-[12.5px] leading-[1.45] text-[#7f91a4]">
             代理服务器可能有助于解决个别地区无法连接目标网络的情况。
-            {mode === 'system' ? (
-              <span className="block mt-1 text-[#8ba1b7]">
-                系统代理: {sysProxySummary}
-              </span>
-            ) : (
-              <span className="block mt-1 text-[#8ba1b7] tabular-nums">
-                探测目标: {targetHost}:{targetPort}
-              </span>
-            )}
+            <span className="block mt-1 text-[#8ba1b7] tabular-nums">
+              探测目标: {targetHost}:{targetPort} · 系统代理: {sysProxySummary}
+            </span>
           </p>
         </div>
 
         {/* Scrollable Proxy Items */}
-        <div className="flex-1 overflow-y-auto py-1">
+        <div className="flex-1 min-h-0 overflow-y-auto py-1">
           {proxies.length === 0 ? (
             <div className="py-12 px-6 text-center text-[13px] text-[#7f91a4]">
               暂无代理配置，点击右下角「添加」创建代理。
             </div>
           ) : (
             proxies.map((entry) => {
-              const isSelected = entry.id === selectedId && mode === 'custom';
+              const isSelected = entry.id === selectedId;
               return (
                 <div
                   key={entry.id}
@@ -411,38 +371,27 @@ export function TelegramProxyWindow({
           )}
         </div>
 
-        {/* Share Proxy List Row */}
-        <button
-          type="button"
-          onClick={handleShareAll}
-          className="flex items-center gap-3.5 px-5 py-3 hover:bg-[#242f3c] transition-colors text-left border-t border-[#232e3a] cursor-pointer"
-        >
-          {copiedBanner ? (
-            <Check className="w-[18px] h-[18px] text-[#45b97c] shrink-0" />
-          ) : (
-            <Copy className="w-[18px] h-[18px] text-[#7f91a4] shrink-0" />
-          )}
-          <span className="text-[14px] text-[#f5f5f5]">
-            {copiedBanner || '分享代理列表'}
-          </span>
-        </button>
-
         {/* Footer Buttons */}
-        <div className="flex items-center justify-end gap-2 px-4 py-3 bg-[#1e2732]">
-          <button
-            type="button"
-            onClick={onTestAll}
-            className="px-4 py-1.5 rounded text-[13.5px] font-medium text-[#64b5f6] hover:bg-[#26323e] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            全部测试
-          </button>
-          <button
-            type="button"
-            onClick={openAddDialog}
-            className="px-4 py-1.5 rounded text-[13.5px] font-medium text-[#64b5f6] hover:bg-[#26323e] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            添加
-          </button>
+        <div className="flex items-center justify-between gap-2 px-4 py-3 bg-[#1e2732] border-t border-[#232e3a] shrink-0">
+          <span className="text-[12px] text-[#7f91a4] pl-1 truncate">
+            {copiedBanner || ''}
+          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onTestAll}
+              className="px-4 py-1.5 rounded text-[13.5px] font-medium text-[#64b5f6] hover:bg-[#26323e] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              全部测试
+            </button>
+            <button
+              type="button"
+              onClick={openAddDialog}
+              className="px-4 py-1.5 rounded text-[13.5px] font-medium text-[#64b5f6] hover:bg-[#26323e] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              添加
+            </button>
+          </div>
         </div>
       </div>
 
