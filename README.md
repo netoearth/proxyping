@@ -74,7 +74,7 @@ pip install pyinstaller
 python3 python_app/build_release.py
 ```
 
-打包产物将输出至 `dist_release/` 目录，并自动生成对应平台的压缩包（`.zip` 或 `.tar.gz`）。
+打包产物将输出至 `dist_release/` 目录，并自动生成对应平台的发布包（Windows `.zip`、macOS `.zip`、Linux `.AppImage`）。
 
 ---
 
@@ -105,8 +105,8 @@ python3 python_app/build_release.py
    - GitHub Actions 将在 `windows-latest`、`macos-latest`、`ubuntu-latest` 三端并发编译打包。
    - 构建完成后会自动在仓库 **Releases** 页面生成对应版本，并附带：
      - `ProxyPing-windows-x64.zip`（Windows 单文件 `.exe`）
-     - `ProxyPing-macos.zip`（macOS `.app` 应用包）
-     - `ProxyPing-linux-x64.tar.gz`（Linux 可执行文件）
+     - `ProxyPing-macos-arm64.zip`（macOS `.app` 应用包）
+     - `ProxyPing-linux-x64.AppImage`（Linux AppImage 单文件应用，下载后 `chmod +x` 即可双击/终端运行）
      - `ProxyPing-python-src.zip`（纯 Python 源码便携包）
 
 ---

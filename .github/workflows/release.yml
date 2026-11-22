@@ -29,7 +29,7 @@ jobs:
             extra_args: "--skip-src"
           - os: ubuntu-latest
             platform_name: linux
-            extra_args: ""
+            extra_args: "--require-appimage"
 
     runs-on: ${{ matrix.os }}
 
@@ -40,11 +40,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Linux Tkinter system package
+      - name: Install Linux Tkinter and AppImage tools
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk
+          sudo apt-get install -y python3-tk desktop-file-utils
+          curl -fL "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -o /tmp/appimagetool
+          chmod +x /tmp/appimagetool
+          echo "APPIMAGETOOL=/tmp/appimagetool" >> "$GITHUB_ENV"
 
       - name: Install PyInstaller
         run: |
