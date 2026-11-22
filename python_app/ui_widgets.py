@@ -40,6 +40,13 @@ def enable_dpi_awareness() -> None:
                 pass
 
 
+def get_dpi_scale(widget: tk.Misc) -> float:
+    try:
+        return max(1.0, float(widget.winfo_fpixels("1i")) / 96.0)
+    except Exception:
+        return 1.0
+
+
 def get_ui_font(size: int = 10, weight: str = "normal") -> tuple:
     sys_name = platform.system()
     if sys_name == "Windows":
@@ -129,6 +136,7 @@ class UnderlineEntry(tk.Frame):
         caption: str,
         initial_value: str = "",
         show: str = "",
+        entry_width: int = 18,
         bg: str = THEME["bg"],
         **kwargs,
     ) -> None:
@@ -157,6 +165,7 @@ class UnderlineEntry(tk.Frame):
             bd=0,
             highlightthickness=0,
             show=show,
+            width=entry_width,
         )
         self.entry.pack(fill="x", ipady=4)
 

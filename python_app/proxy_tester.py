@@ -34,6 +34,7 @@ from ui_widgets import (
     TelegramRadioRow,
     UnderlineEntry,
     enable_dpi_awareness,
+    get_dpi_scale,
     get_ui_font,
 )
 
@@ -55,21 +56,17 @@ class EditProxyDialog(tk.Toplevel):
 
         self.title("编辑代理" if entry else "添加代理")
         self.configure(bg=THEME["bg"])
-        self.minsize(360, 500)
         self.transient(master)
         self.grab_set()
 
-        w, h = 370, 540
-        x = master.winfo_rootx() + max(0, (master.winfo_width() - w) // 2)
-        y = master.winfo_rooty() + max(0, (master.winfo_height() - h) // 2)
-        self.geometry(f"{w}x{h}+{x}+{y}")
-
+        self._scale = get_dpi_scale(master)
         self._build_ui()
         self._refresh_protocol_view()
 
     def _build_ui(self) -> None:
         root = tk.Frame(self, bg=THEME["bg"], padx=22, pady=18)
         root.pack(fill="both", expand=True)
+        self._root_frame = root
 
         tk.Label(
             root,
@@ -97,7 +94,7 @@ class EditProxyDialog(tk.Toplevel):
             fg=THEME["muted"],
             bg=THEME["bg"],
             justify="left",
-            wraplength=310,
+            wraplength=int(320 * self._scale),
             anchor="w",
         )
         self.desc_label.pack(fill="x", pady=(10, 14))
@@ -113,22 +110,24 @@ class EditProxyDialog(tk.Toplevel):
 
         addr_row = tk.Frame(root, bg=THEME["bg"])
         addr_row.pack(fill="x", pady=(0, 16))
+        addr_row.columnconfigure(0, weight=3)
+        addr_row.columnconfigure(1, weight=1)
 
         self.host_input = UnderlineEntry(
             addr_row,
             caption="服务器",
             initial_value=self._entry.host if self._entry else "",
+            entry_width=18,
         )
-        self.host_input.pack(side="left", fill="x", expand=True, padx=(0, 14))
+        self.host_input.grid(row=0, column=0, sticky="ew", padx=(0, 14))
 
         self.port_input = UnderlineEntry(
             addr_row,
             caption="端口",
             initial_value=str(self._entry.port) if self._entry else "",
-            width=76,
+            entry_width=7,
         )
-        self.port_input.pack(side="right")
-        self.port_input.pack_propagate(False)
+        self.port_input.grid(row=0, column=1, sticky="ew")
 
         tk.Label(
             root,
@@ -166,6 +165,23 @@ class EditProxyDialog(tk.Toplevel):
         )
 
         self.host_input.entry.focus_set()
+        self.bind("<Return>", lambda _e: self._save())
+        self.bind("<Escape>", lambda _e: self.destroy())
+
+    def _fit_to_content(self) -> None:
+        self.update_idletasks()
+        w = max(int(400 * self._scale), self._root_frame.winfo_reqwidth() + 8)
+        h = max(int(520 * self._scale), self._root_frame.winfo_reqheight() + 12)
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        w = min(w, max(340, sw - 40))
+        h = min(h, max(440, sh - 60))
+        x = self.master.winfo_rootx() + max(0, (self.master.winfo_width() - w) // 2)
+        y = self.master.winfo_rooty() + max(0, (self.master.winfo_height() - h) // 2)
+        x = max(0, min(x, sw - w))
+        y = max(0, min(y, sh - h))
+        self.minsize(w, h)
+        self.geometry(f"{w}x{h}+{x}+{y}")
 
     def _select_protocol(self, proto: str) -> None:
         self._selected_proto = proto
@@ -188,6 +204,7 @@ class EditProxyDialog(tk.Toplevel):
             )
             self.user_input.pack(fill="x", pady=(0, 10))
             self.pass_input.pack(fill="x", pady=(0, 8))
+        self._fit_to_content()
 
     def _save(self) -> None:
         host = self.host_input.get()
@@ -342,10 +359,13 @@ class ProxyTesterApp:
 
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
+        self._scale = get_dpi_scale(root)
         self.root.title("ProxyPing · 代理设置与多源出口 IP 检测")
         self.root.configure(bg=THEME["bg"])
-        self.root.geometry("940x640")
-        self.root.minsize(820, 540)
+        win_w = min(int(980 * self._scale), max(820, root.winfo_screenwidth() - 60))
+        win_h = min(int(660 * self._scale), max(540, root.winfo_screenheight() - 80))
+        self.root.geometry(f"{win_w}x{win_h}")
+        self.root.minsize(int(820 * self._scale), int(520 * self._scale))
 
         cfg = load_config()
         self.mode: str = cfg.get("mode", "system")
@@ -374,7 +394,7 @@ class ProxyTesterApp:
         shell = tk.Frame(self.root, bg=THEME["bg"])
         shell.pack(fill="both", expand=True)
 
-        left_pane = tk.Frame(shell, bg=THEME["bg"], width=390)
+        left_pane = tk.Frame(shell, bg=THEME["bg"], width=int(430 * self._scale))
         left_pane.pack(side="left", fill="y")
         left_pane.pack_propagate(False)
 
@@ -438,9 +458,14 @@ class ProxyTesterApp:
             fg=THEME["muted"],
             bg=THEME["bg_recessed"],
             justify="left",
+            wraplength=int(380 * self._scale),
             anchor="w",
         )
         self.notice_label.pack(fill="x")
+        notice.bind(
+            "<Configure>",
+            lambda e: self.notice_label.configure(wraplength=max(200, e.width - 40)),
+        )
 
         # Pack Footer BEFORE expandable list so Add/Test/Close buttons are never clipped
         footer = tk.Frame(left_pane, bg=THEME["bg"], padx=16, pady=12)

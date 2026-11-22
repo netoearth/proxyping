@@ -400,7 +400,7 @@ export function TelegramProxyWindow({
         <div className="absolute inset-0 bg-black/55 flex items-center justify-center p-3 z-40">
           <form
             onSubmit={handleSaveForm}
-            className="w-full max-w-[352px] bg-[#1e2732] border border-[#2c3847] rounded-lg shadow-2xl px-6 py-5 flex flex-col"
+            className="w-full max-w-[352px] max-h-full overflow-y-auto bg-[#1e2732] border border-[#2c3847] rounded-lg shadow-2xl px-6 py-5 flex flex-col"
           >
             <h3 className="text-[16px] font-semibold text-[#f5f5f5] mb-3.5">
               {isNewEntry ? '添加代理' : '编辑代理'}
