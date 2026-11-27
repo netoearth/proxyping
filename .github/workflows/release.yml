@@ -73,8 +73,8 @@ jobs:
             bash -euo pipefail -c '
               apt-get update
               apt-get install -y --no-install-recommends \
-                python3 python3-pip python3-tk binutils desktop-file-utils file ca-certificates
-              python3 -m pip install --no-cache-dir --upgrade pip
+                python3 python3-pip python3-tk libpython3.10 libpython3.10-dev binutils desktop-file-utils file ca-certificates
+              ldconfig -p | grep -q "libpython3\.10\.so\.1\.0"
               python3 -m pip install --no-cache-dir pyinstaller
               python3 -m py_compile python_app/proxy_core.py python_app/ui_widgets.py python_app/proxy_tester.py python_app/build_release.py
               python3 python_app/build_release.py --require-appimage
