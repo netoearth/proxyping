@@ -7,6 +7,7 @@ Supports Windows, macOS, and Linux with zero third-party dependencies.
 from __future__ import annotations
 
 import queue
+import sys
 import time
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
@@ -827,6 +828,11 @@ class ProxyTesterApp:
 
 
 def main() -> None:
+    if "--check" in sys.argv[1:]:
+        tcl = tk.Tcl()
+        patchlevel = tcl.eval("info patchlevel")
+        print(f"ProxyPing OK (Tcl {patchlevel}, Tk {tk.TkVersion})")
+        return
     enable_dpi_awareness()
     root = tk.Tk()
     ProxyTesterApp(root)

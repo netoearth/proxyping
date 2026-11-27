@@ -93,7 +93,7 @@ def _write_png_icon(dest: Path, size: int = 256) -> None:
     dest.write_bytes(png)
 
 
-def run_pyinstaller() -> Path:
+def run_pyinstaller(onedir: bool = False) -> Path:
     sys_name = platform.system().lower()
     cmd = [
         sys.executable,
@@ -114,8 +114,8 @@ def run_pyinstaller() -> Path:
         str(BUILD_WORK_DIR),
     ]
 
-    # macOS .app bundle uses --windowed directory; Win/Linux use single-file executable
-    if sys_name != "darwin":
+    # macOS .app bundle and Linux AppImage use directory bundle; Windows/tarball use --onefile
+    if not onedir:
         cmd.append("--onefile")
 
     cmd.append(str(PYTHON_APP_DIR / "proxy_tester.py"))
@@ -165,15 +165,30 @@ def _build_linux_appimage(
     usr_apps.mkdir(parents=True, exist_ok=True)
     usr_icons.mkdir(parents=True, exist_ok=True)
 
-    target_bin = usr_bin / APP_NAME
-    shutil.copy2(binary_path, target_bin)
-    target_bin.chmod(0o755)
-
     apprun = appdir / "AppRun"
-    apprun.write_text(
-        f'#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")"\nexec "$HERE/usr/bin/{APP_NAME}" "$@"\n',
-        encoding="utf-8",
-    )
+    if binary_path.is_dir():
+        usr_lib = appdir / "usr" / "lib" / "proxyping"
+        usr_lib.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(binary_path, usr_lib, symlinks=True)
+        (usr_lib / APP_NAME).chmod(0o755)
+        bin_wrapper = usr_bin / APP_NAME
+        bin_wrapper.write_text(
+            f'#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")/../.."\nexec "$HERE/usr/lib/proxyping/{APP_NAME}" "$@"\n',
+            encoding="utf-8",
+        )
+        bin_wrapper.chmod(0o755)
+        apprun.write_text(
+            f'#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")"\nexec "$HERE/usr/lib/proxyping/{APP_NAME}" "$@"\n',
+            encoding="utf-8",
+        )
+    else:
+        target_bin = usr_bin / APP_NAME
+        shutil.copy2(binary_path, target_bin)
+        target_bin.chmod(0o755)
+        apprun.write_text(
+            f'#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")"\nexec "$HERE/usr/bin/{APP_NAME}" "$@"\n',
+            encoding="utf-8",
+        )
     apprun.chmod(0o755)
 
     desktop_content = (
@@ -264,7 +279,11 @@ def main() -> None:
         )
         sys.exit(1)
 
-    artifact = run_pyinstaller()
+    sys_name = platform.system().lower()
+    use_appimage = sys_name == "linux" and (require_appimage or _find_appimagetool() is not None)
+    use_onedir = sys_name == "darwin" or use_appimage
+
+    artifact = run_pyinstaller(onedir=use_onedir)
     archive = package_artifact(artifact, require_appimage=require_appimage)
     print(f"Created release package: {archive}")
 

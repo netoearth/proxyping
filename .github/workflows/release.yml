@@ -37,29 +37,64 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
+        if: runner.os != 'Linux'
         with:
           python-version: "3.11"
 
-      - name: Install Linux Tkinter and AppImage tools
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-tk desktop-file-utils
-          curl -fL "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -o /tmp/appimagetool
-          chmod +x /tmp/appimagetool
-          echo "APPIMAGETOOL=/tmp/appimagetool" >> "$GITHUB_ENV"
-
-      - name: Install PyInstaller
+      - name: Install PyInstaller (Windows / macOS)
+        if: runner.os != 'Linux'
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
 
-      - name: Verify Python syntax
+      - name: Verify Python syntax (Windows / macOS)
+        if: runner.os != 'Linux'
         run: |
           python -m py_compile python_app/proxy_core.py python_app/ui_widgets.py python_app/proxy_tester.py python_app/build_release.py
 
-      - name: Build release archive
+      - name: Build release archive (Windows / macOS)
+        if: runner.os != 'Linux'
         run: python python_app/build_release.py ${{ matrix.extra_args }}
+
+      - name: Build Linux AppImage in Ubuntu 22.04 (GLIBC 2.35)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -o /tmp/appimagetool
+          chmod +x /tmp/appimagetool
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -v "/tmp/appimagetool:/usr/local/bin/appimagetool:ro" \
+            -w /work \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e APPIMAGETOOL=/usr/local/bin/appimagetool \
+            -e HOST_UID="$(id -u)" \
+            -e HOST_GID="$(id -g)" \
+            ubuntu:22.04 \
+            bash -euo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                python3 python3-pip python3-tk binutils desktop-file-utils file ca-certificates
+              python3 -m pip install --no-cache-dir --upgrade pip
+              python3 -m pip install --no-cache-dir pyinstaller
+              python3 -m py_compile python_app/proxy_core.py python_app/ui_widgets.py python_app/proxy_tester.py python_app/build_release.py
+              python3 python_app/build_release.py --require-appimage
+              echo "Verifying max GLIBC requirement <= GLIBC_2.35..."
+              bad_glibc=0
+              while IFS= read -r -d "" elf; do
+                max_ver=$(objdump -T "$elf" 2>/dev/null | grep -oE "GLIBC_[0-9]+(\.[0-9]+)+" | sort -Vu | tail -n 1 || true)
+                if [ -n "$max_ver" ]; then
+                  if [ "$(printf "GLIBC_2.35\n%s\n" "$max_ver" | sort -V | tail -n 1)" != "GLIBC_2.35" ]; then
+                    echo "ERROR: $elf requires $max_ver > GLIBC_2.35" >&2
+                    bad_glibc=1
+                  fi
+                fi
+              done < <(find python_app/build/ProxyPing.AppDir -type f \( -name "*.so*" -o -executable \) -print0)
+              [ "$bad_glibc" -eq 0 ]
+              APPIMAGE_EXTRACT_AND_RUN=1 ./dist_release/ProxyPing-linux-x64.AppImage --check
+              chown -R "$HOST_UID:$HOST_GID" dist_release python_app/build python_app/dist
+            '
+          echo "Verifying forward compatibility on host runner..."
+          APPIMAGE_EXTRACT_AND_RUN=1 ./dist_release/ProxyPing-linux-x64.AppImage --check
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
